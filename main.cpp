@@ -1,5 +1,4 @@
-#include <iostream>
-#include "GraphicalLibrary.hpp"
+#include "SelestialObjects.hpp"
 
 float aspect;
 int width;
@@ -7,6 +6,7 @@ int height;
 fpsCounter* fps;
 double timeData;
 double* currentTime = &timeData;
+SelestialObject* Sphere;
 
 void init() {
 }
@@ -17,7 +17,7 @@ void display(GLFWwindow* window) {
     glfwGetFramebufferSize(window, &width, &height);
     aspect = (float)width / (float)height;
     glViewport(0, 0, width, height);
-
+    Sphere->refresh(0, aspect);
 }
 
 int main() {
@@ -31,6 +31,7 @@ int main() {
     glewInit();
     init();
     fps = new fpsCounter(window, currentTime, "BlenderTexture");
+    Sphere = new SelestialObject(0, 0, 0, 0, 0, 0, 0, 0, "assets/8k_earth_daymap.jpg");
     while (!glfwWindowShouldClose(window)) {
         timeData = glfwGetTime();
         display(window);
