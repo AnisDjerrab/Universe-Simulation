@@ -1,4 +1,5 @@
 #include "SelestialObjects.hpp"
+#include "UpperBar.hpp"
 
 float aspect;
 int width;
@@ -7,6 +8,8 @@ fpsCounter* fps;
 double timeData;
 double* currentTime = &timeData;
 SelestialObject* Sphere;
+glm::mat4 vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-0.0f, -0.0f, -3.0f));
+UpperBar* UpperBar;
 
 void init() {
 }
@@ -17,7 +20,7 @@ void display(GLFWwindow* window) {
     glfwGetFramebufferSize(window, &width, &height);
     aspect = (float)width / (float)height;
     glViewport(0, 0, width, height);
-    Sphere->refresh(0, aspect);
+    Sphere->refresh(0, aspect, vMat);
 }
 
 int main() {

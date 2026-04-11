@@ -1,21 +1,13 @@
-#include <cmath>
 #include <glm/detail/qualifier.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
-#include <vector>
-#include <iostream>
-#include "libs/SOIL2.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <fstream>
 #include <string>
-#include <sstream>
-#include <charconv>
-#include <memory>
 
 using namespace std;
 
@@ -175,11 +167,6 @@ struct indice {
 
 class SingleObject {
     private:
-        GLuint objectProgram;
-        GLuint* textureID;
-        int texNumber = 0;
-        GLuint mvLoc;
-        GLuint projLoc;
     public:
         int numVertices = 0;
         vector<indice*> indices;
@@ -189,221 +176,12 @@ class SingleObject {
         glm::mat4 mvMat, vMat, mMat, pMat;
         GLuint vao[1];
         GLuint vbo[3];
-        SingleObject(string vertPath, string fragPath, string ObjectPath, float aspect)
-        {
-            // initialize the gpu program
-            objectProgram = createShaderProgram(vertPath, fragPath);
-            // initialize the camera position
-            glUseProgram(objectProgram);
-            projLoc = glGetUniformLocation(objectProgram, "proj_matrix");
-            mvLoc = glGetUniformLocation(objectProgram, "mv_matrix");
-            pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f);
-            vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 0.0f, -13.0f));
-            mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-            mvMat = vMat * mMat;
-            // now the essential step : parse the blender (or other) obj file
-            vector<glm::vec3> tmp_vertices;
-            vector<glm::vec2> tmp_texCoords;
-            vector<glm::vec3> tmp_normals;
-            fstream ObjectFile(ObjectPath);
-            string line;
-            while (getline(ObjectFile, line))
-            {
-                stringstream ss(line);
-                vector<string> tokens;
-                string token;
-                while (getline(ss, token, ' '))
-                {
-                    tokens.push_back(token);
-                }
-                if (tokens.size() > 0)
-                {
-                    if (tokens[0] == "#" || tokens[0] == "mtllib" || tokens[0] == "s") {
-                    continue;
-                    }
-                    else if (tokens[0] == "v") {
-                        if (tokens.size() < 4) {
-                            cout << "critical error : invalid entry in an object file." << endl;
-                            continue;
-                        }
-                        glm::vec3 tmp(stof(tokens[1]), stof(tokens[2]), stof(tokens[3]));
-                        tmp_vertices.push_back(tmp);
-                        numVertices++;
-                    } else if (tokens[0] == "vn") {
-                        if (tokens.size() < 4) {
-                            cout << "critical error : invalid entry in an object file." << endl;
-                            continue;
-                        }
-                        glm::vec3 tmp(stof(tokens[1]), stof(tokens[2]), stof(tokens[3]));
-                        tmp_normals.push_back(tmp);
-                    } else if (tokens[0] == "vt") {
-                        if (tokens.size() < 3) {
-                            cout << "critical error : invalid entry in an object file." << endl;
-                            continue;
-                        }
-                        glm::vec2 tmp(stof(tokens[1]), stof(tokens[2]));
-                        tmp_texCoords.push_back(tmp);
-                    } else if (tokens[0] == "f") {
-                        unique_ptr<indice> ind = unique_ptr<indice>(new indice());
-                        // check that the number of tokens above two
-                        if (tokens.size() < 4) {
-                            cout << "critical error : invalid entry in an object file." << endl;
-                            continue;
-                        }
-                        // split the tokens in numbers, and do the operations
-                        if (tokens.size() - 1 == 3) {
-                            for (int i = 1; i < 4; i++) {
-                                vector<int> tmp;
-                                string number;
-                                stringstream sn(tokens[i]);
-                                while (getline(sn, number, '/')) {
-                                    int x;
-                                    from_chars(number.data(), number.data() + number.size(), x);
-                                    x--;
-                                    tmp.push_back(x);
-                                }
-                                ind->v = tmp[0];
-                                ind->vt = tmp[1];
-                                ind->vn = tmp[2];
-                                indices.push_back(ind.release());
-                                ind = unique_ptr<indice>(new indice());
-                            }
-                        } else if (tokens.size() - 1 == 4) {
-                            for (int i = 1; i < 4; i++) {
-                                vector<int> tmp;
-                                string number;
-                                stringstream sn(tokens[i]);
-                                while (getline(sn, number, '/')) {
-                                    int x;
-                                    from_chars(number.data(), number.data() + number.size(), x);
-                                    x--;
-                                    tmp.push_back(x);
-                                }
-                                ind->v = tmp[0];
-                                ind->vt = tmp[1];
-                                ind->vn = tmp[2];
-                                indices.push_back(ind.release());
-                                ind = unique_ptr<indice>(new indice());
-                            }
-                            for (int i = 1; i < 5; i++) {
-                                vector<int> tmp;
-                                string number;
-                                stringstream sn(tokens[i]);
-                                while (getline(sn, number, '/')) {
-                                    int x;
-                                    from_chars(number.data(), number.data() + number.size(), x);
-                                    x--;
-                                    tmp.push_back(x);
-                                }
-                                ind->v = tmp[0];
-                                ind->vt = tmp[1];
-                                ind->vn = tmp[2];
-                                indices.push_back(ind.release());
-                                ind = unique_ptr<indice>(new indice());
-                                if (i == 2) {
-                                    i++;
-                                }
-                            }
-                        } else if (tokens.size() - 1 == 5) {
-                            for (int i = 1; i < 4; i++) {
-                                vector<int> tmp;
-                                string number;
-                                stringstream sn(tokens[i]);
-                                while (getline(sn, number, '/')) {
-                                    int x;
-                                    from_chars(number.data(), number.data() + number.size(), x);
-                                    x--;
-                                    tmp.push_back(x);
-                                }
-                                ind->v = tmp[0];
-                                ind->vt = tmp[1];
-                                ind->vn = tmp[2];
-                                indices.push_back(ind.release());
-                                ind = unique_ptr<indice>(new indice());
-                            }
-                            for (int i = 1; i < 6; i++) {
-                                vector<int> tmp;
-                                string number;
-                                stringstream sn(tokens[i]);
-                                while (getline(sn, number, '/')) {
-                                    int x;
-                                    from_chars(number.data(), number.data() + number.size(), x);
-                                    x--;
-                                    tmp.push_back(x);
-                                }
-                                ind->v = tmp[0];
-                                ind->vt = tmp[1];
-                                ind->vn = tmp[2];
-                                indices.push_back(ind.release());
-                                ind = unique_ptr<indice>(new indice());
-                                if (i == 2) {
-                                    i+=2;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < indices.size(); i++) {
-                normals.push_back(tmp_normals[indices[i]->vn]);
-                vertices.push_back(tmp_vertices[indices[i]->v]);
-                texCoords.push_back(tmp_texCoords[indices[i]->vt]);
-                delete indices[i];
-            }
-        }
-        void UpdateAspect(float aspect) {
-            pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f);
-        }
-        void initTexture(string pathOfTheTexture, int flag1, unsigned int flag2, unsigned int flag3) {
-            textureID = new GLuint[1];
-            textureID[0] = SOIL_load_OGL_texture(pathOfTheTexture.c_str(), flag1, flag2, flag3);
-            texNumber++;
-        }
-        void initTextures(int numberOfTextures, vector<string> pathOfTextures, vector<int> flag1, vector<unsigned int> flag2, vector<unsigned int> flag3) {
-            if (pathOfTextures.size() < numberOfTextures || flag1.size() < numberOfTextures || flag2.size() < numberOfTextures || flag3.size() < numberOfTextures) {
-                cout << "critical error : no enough texture files provided." << endl;
-                return;
-            }
-            textureID = new GLuint[numberOfTextures];
-            for (int i = 0; i < numberOfTextures; i++) {
-                textureID[i] = SOIL_load_OGL_texture(pathOfTextures[i].c_str(), flag1[i], flag2[i], flag3[i]);
-                texNumber++;
-            }
-        }
-        void initVertexGeneric() {
-            glGenVertexArrays(1, vao);
-            glBindVertexArray(vao[0]);
-            glGenBuffers(3, vbo);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-            glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(glm::vec2), &texCoords[0], GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-            glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
-        }
-        void PrepDisplayObjectGeneric() {
-            glUseProgram(objectProgram);
-            glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pMat));
-            glUniformMatrix4fv(mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
-            glBindVertexArray(vao[0]);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(1);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(2);
-        }
-        void displayTextures() {
-            for (int i = 0; i < texNumber; i++) {
-                glActiveTexture(GL_TEXTURE0 + i);
-                glBindTexture(GL_TEXTURE_2D, textureID[i]);
-            }
-            glEnable(GL_DEPTH_TEST);
-        }
-        void GenericDraw() {
-            glDrawArrays(GL_TRIANGLES, 0, indices.size());
-        }
+        SingleObject(string vertPath, string fragPath, string ObjectPath, float aspect);
+        void UpdateAspect(float aspect);
+        void initTexture(string pathOfTheTexture, int flag1, unsigned int flag2, unsigned int flag3);
+        void initTextures(int numberOfTextures, vector<string> pathOfTextures, vector<int> flag1, vector<unsigned int> flag2, vector<unsigned int> flag3);
+        void initVertexGeneric();
+        void PrepDisplayObjectGeneric();
+        void displayTextures();
+        void GenericDraw();
 };
