@@ -5,7 +5,6 @@
 
 using namespace std;
 
-
 struct MenuItem {
     GLuint VAO[1];
     GLuint VBO[1];

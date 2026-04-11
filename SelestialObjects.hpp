@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 #include "GraphicalLibrary.hpp"
 
 class SelestialObject {
@@ -23,7 +24,7 @@ class SelestialObject {
         double velocityZ;           // m/s
         double mass;                // kg
         double radius;              // m
-        SelestialObject(double posX, double posY, double posZ, double velX, double velY, double velZ, double m, double r, string path_of_the_texture) {
+        SelestialObject(double posX, double posY, double posZ, double velX, double velY, double velZ, double m, double r, std::string path_of_the_texture) {
             // we first need to setup all the object's properties
             positionX = posX;
             positionY = posY;
@@ -36,16 +37,16 @@ class SelestialObject {
             // create the shader programs
             renderingProgram = createShaderProgram("shaders/vertSphere.glsl", "shaders/fragSphere.glsl");
             // then, initialize the Sphere object
-            vector<int> ind = sphere.getIndices();
-            vector<glm::vec3> vert = sphere.getVertices();
-            vector<glm::vec2> tex = sphere.getTexCoords();
-            vector<glm::vec3> norm = sphere.getNormals();
+            std::vector<int> ind = sphere.getIndices();
+            std::vector<glm::vec3> vert = sphere.getVertices();
+            std::vector<glm::vec2> tex = sphere.getTexCoords();
+            std::vector<glm::vec3> norm = sphere.getNormals();
             // vertex positions
-            vector<float> pvalues;
+            std::vector<float> pvalues;
             // texture coordinates
-            vector<float> tvalues;
-            // normal vectors
-            vector<float> nvalues;
+            std::vector<float> tvalues;
+            // normal std::vectors
+            std::vector<float> nvalues;
             int numIndices = sphere.getNumIndices();
             for (int i = 0; i < numIndices; i++)
             {
