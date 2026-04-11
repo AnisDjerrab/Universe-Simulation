@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include "libs/SOIL2.h"
 #include "GraphicalLibrary.hpp"
 
 class SelestialObject {
