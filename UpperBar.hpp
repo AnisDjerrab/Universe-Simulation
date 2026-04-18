@@ -2,6 +2,8 @@
 #include <string>
 #include <variant>
 #include "GraphicalLibrary.hpp"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 using namespace std;
 
@@ -9,6 +11,9 @@ struct MenuItem {
     GLuint VAO[1];
     GLuint VBO[1];
     vector<float> vertices;
+    vector<MenuItem*> children;
+    string text;
+    bool printChildren = false;
 };
 
 struct tree {
@@ -17,9 +22,11 @@ struct tree {
     variant<void*, vector<tree*>> children_orFuncToCall;
 };
 
+
 class UpperBar {
     private:
         vector<int> appearingMenus;
+        vector<MenuItem*> MenuItemsTree;
         tree* head;
         GLuint renderingProgram;
     public:
@@ -33,18 +40,20 @@ class UpperBar {
             // special treatment for the root node
             // create a rectangle that uses the entire top of the screen
             head->item->vertices = {
-                -1.0f,  1.0f, // top-left
-                1.0f,  1.0f,  // top-right
-                1.0f, 0.9f,   // bottom-right
-                -1.0f,  1.0f,  // top-left
-                1.0f, 0.9f,   // bottom-right
-                -1.0f, 0.9f   // bottom-left
+                -1.0f,  1.0f, 1.0f,   // top-left
+                1.0f,  1.0f, 1.0f,    // top-right
+                1.0f, 0.92f, 1.0f,     // bottom-right
+                -1.0f,  1.0f, 1.0f,   // top-left
+                1.0f, 0.92f, 1.0f,     // bottom-right
+                -1.0f, 0.92f, 1.0f     // bottom-left
             };
             glGenVertexArrays(1, head->item->VAO);
             glBindVertexArray(head->item->VAO[0]);
             glGenBuffers(1, head->item->VBO);
             glBindBuffer(GL_ARRAY_BUFFER, head->item->VBO[0]);
             glBufferData(GL_ARRAY_BUFFER, head->item->vertices.size() * sizeof(float), head->item->vertices.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
         }
         void diplay() {
             glUseProgram(renderingProgram);
