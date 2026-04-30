@@ -2,9 +2,7 @@
 #include <string>
 #include <variant>
 #include "GraphicalLibrary.hpp"
-#include <ft2build.h>
 #include <variant>
-#include FT_FREETYPE_H
 
 using namespace std;
 
@@ -23,7 +21,7 @@ struct tree {
     variant<void*, vector<tree*>> children_orFuncToCall;
 };
 
-void convertTreeInMenuItem(tree* item, int depthX, int depthY) {
+void convertTreeInMenuItem(tree* item, int& depthX, int& depthY) {
     MenuItem* outputItem = new MenuItem;
     outputItem->vertices = {
         -(float)(depthX / 10),  (float)(depthY / 10), 1.0f,                 // top-left
@@ -41,10 +39,27 @@ void convertTreeInMenuItem(tree* item, int depthX, int depthY) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     item->item = outputItem;
-    auto children = get(item->children_orFuncToCall);
-    
+    if (holds_alternative<vector<tree*>>(item->children_orFuncToCall)) {
+        auto children = get<vector<tree*>>(item->children_orFuncToCall);
+        depthX++;
+        depthY = 2;
+        for (tree* child : children) {
+            convertTreeInMenuItem(child, depthX, depthY);
+            depthY++;
+        }
+    }
 }
 
+void displayMenuItems(tree* item) {
+    glBindVertexArray(item->item->VAO[0]);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    if (holds_alternative<vector<tree*>>(item->children_orFuncToCall)) {
+        auto children = get<vector<tree*>>(item->children_orFuncToCall);
+        for (tree* child : children) {
+            displayMenuItems(child);
+        }
+    }
+}
 
 class UpperBar {
     private:
@@ -77,11 +92,24 @@ class UpperBar {
             glBufferData(GL_ARRAY_BUFFER, head->item->vertices.size() * sizeof(float), head->item->vertices.data(), GL_STATIC_DRAW);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
-
+            // now, generate the menu items tree
+            // we call the recursive function to convert the tree into a menu items tree
+            // depthX and depthY are use to position the menu items on the screen => max value is 10
+            int depthX = 0;
+            int depthY = 2;
+            if (holds_alternative<vector<tree*>>(head->children_orFuncToCall)) {
+                auto children = get<vector<tree*>>(head->children_orFuncToCall);
+                depthX++;
+                depthY = 2;
+                for (tree* child : children) {
+                    convertTreeInMenuItem(child, depthX, depthY);
+                    depthY++;
+                }
+            }
         }
         void diplay() {
             glUseProgram(renderingProgram);
-            glBindVertexArray(head->item->VAO[0]);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            // now, we call a recursive function to display each and every menu item
+            displayMenuItems(head);
         }
 };
