@@ -1,8 +1,8 @@
-#include <vector>
 #include <string>
 #include <variant>
 #include "GraphicalLibrary.hpp"
-#include <variant>
+#include <vector>
+#include <unordered_map>
 
 using namespace std;
 
@@ -18,8 +18,47 @@ struct MenuItem {
 struct tree {
     string text;
     MenuItem* item;
-    variant<void*, vector<tree*>> children_orFuncToCall;
+    variant<void(*)(), vector<tree*>> children_orFuncToCall;
 };
+
+// here, we'll declare all our menu options
+void undeclared() {
+    cout << "error : function not implemented." << endl;
+}
+
+
+// This is the hardcoded known function call list
+unordered_map<string, void(*)()> known_symbols = {
+};
+
+void convertArrayIntoTree(vector<string>& arr, int& index, tree* node) {
+    variant<void(*)(), vector<tree*>> children_orFuncToCall;
+    if (arr[index + 1] == "submenu") {
+        index+=2;
+        children_orFuncToCall = vector<tree*>();
+        for (index; index < arr.size(); index+=2) {
+            if (arr[index] == "exit_submenu") {
+                index+=2;
+                break;
+            }
+            if (arr[index + 1] == "submenu") {
+                auto tmp = new tree;
+                tmp->text = arr[index];
+                convertArrayIntoTree(arr, index, tmp);
+                get<vector<tree*>>(children_orFuncToCall).push_back(tmp);
+            }
+        }
+        node->children_orFuncToCall = children_orFuncToCall;
+    } else {
+        if (known_symbols.find(arr[index + 1]) != known_symbols.end()) {
+            children_orFuncToCall = known_symbols[arr[index + 1]];
+        } else {
+            children_orFuncToCall = undeclared;
+        }
+        node->children_orFuncToCall = children_orFuncToCall;
+        index+=2;
+    }
+}
 
 void convertTreeInMenuItem(tree* item, int& depthX, int& depthY) {
     MenuItem* outputItem = new MenuItem;

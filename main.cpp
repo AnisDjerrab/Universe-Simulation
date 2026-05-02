@@ -1,5 +1,8 @@
 #include "SelestialObjects.hpp"
 #include "UpperBar.hpp"
+#include <initializer_list>
+#include <vector>
+#include <unordered_map>
 
 float aspect;
 int width;
@@ -12,10 +15,24 @@ glm::mat4 vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-0.0f, -0.0f, -3.0f))
 tree head;
 class UpperBar* bar;
 
+// syntax of this harcoded menu:
+// 1) the root of the menu can have whatever name it wants (it doesn't matter)
+// 2) a submenu must have the property submenu in it.
+// 3) to exit a submenu, since it is a flat list, you must have the key "exit_submenu" (again, the property doesn't matter here)
+// 4) a function call here must be known and referenced in the hardcoded function call list.
+
+vector<string> menu = {
+    "Root", "submenu",
+        "element1", "submenu",
+            "action1", "open",
+            "exit_submenu", "",
+        "exit_submenu", ""
+};
+
 void init() {
-    head.text = "(placeholder)";
-    head.item = new MenuItem;
-    head.children_orFuncToCall = vector<tree*>();
+    head.text = "Root";
+    int index = 0;
+    convertArrayIntoTree(menu, index, &head);
     bar = new UpperBar(&head);
     bar->GenUI();
 }
