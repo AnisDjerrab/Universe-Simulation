@@ -1,10 +1,9 @@
 #include <string>
 #include <variant>
+#include <iostream>
 #include "GraphicalLibrary.hpp"
 #include <vector>
 #include <unordered_map>
-#include "libs/ft2build.h"
-#include FT_FREETYPE_H
 
 using namespace std;
 
@@ -73,7 +72,6 @@ void convertTreeInMenuItem(tree* item, float& depthX, float& depthY, int& level)
         x + w, y - h, 1.0f,
         x,     y - h, 1.0f
     };
-    cout << depthX << " : " << depthY << endl;
     glGenVertexArrays(1, outputItem->VAO);
     glBindVertexArray(outputItem->VAO[0]);
     glGenBuffers(1, outputItem->VBO);
@@ -82,6 +80,9 @@ void convertTreeInMenuItem(tree* item, float& depthX, float& depthY, int& level)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     item->item = outputItem;
+    // now, generate the characters
+
+    // finally, recursively process the following menus
     if (holds_alternative<vector<tree*>>(item->children_orFuncToCall)) {
         auto children = get<vector<tree*>>(item->children_orFuncToCall);
         float depthX_tmp = depthX + 2, depthY_tmp;
@@ -121,6 +122,7 @@ class UpperBar {
             appearingMenus.push_back(0);
             // create the rendering program
             renderingProgram = createShaderProgram("shaders/vertMenu.glsl", "shaders/fragMenu.glsl");
+
         }
         void GenUI() {
             // special treatment for the root node

@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - "-Ilibs"   
+
+Diagnostics:
+  MissingIncludes: Strict
