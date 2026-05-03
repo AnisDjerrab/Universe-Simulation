@@ -31,6 +31,7 @@ void undeclared() {
 unordered_map<string, void(*)()> known_symbols = {
 };
 
+
 void convertArrayIntoTree(vector<string>& arr, int& index, tree* node) {
     variant<void(*)(), vector<tree*>> children_orFuncToCall;
     if (arr[index + 1] == "submenu") {
@@ -38,15 +39,12 @@ void convertArrayIntoTree(vector<string>& arr, int& index, tree* node) {
         children_orFuncToCall = vector<tree*>();
         for (index; index < arr.size(); index+=2) {
             if (arr[index] == "exit_submenu") {
-                index+=2;
                 break;
             }
-            if (arr[index + 1] == "submenu") {
-                auto tmp = new tree;
-                tmp->text = arr[index];
-                convertArrayIntoTree(arr, index, tmp);
-                get<vector<tree*>>(children_orFuncToCall).push_back(tmp);
-            }
+            auto tmp = new tree;
+            tmp->text = arr[index];
+            convertArrayIntoTree(arr, index, tmp);
+            get<vector<tree*>>(children_orFuncToCall).push_back(tmp);
         }
         node->children_orFuncToCall = children_orFuncToCall;
     } else {
@@ -56,20 +54,24 @@ void convertArrayIntoTree(vector<string>& arr, int& index, tree* node) {
             children_orFuncToCall = undeclared;
         }
         node->children_orFuncToCall = children_orFuncToCall;
-        index+=2;
     }
 }
 
-void convertTreeInMenuItem(tree* item, int& depthX, int& depthY) {
+void convertTreeInMenuItem(tree* item, float& depthX, float& depthY, int& level) {
     MenuItem* outputItem = new MenuItem;
+    float x = -1.0f + depthX * 0.2f;
+    float y =  1.0f - depthY * 0.08f;
+    float w = 0.4f;
+    float h = 0.08f;
     outputItem->vertices = {
-        -(float)(depthX / 10),  (float)(depthY / 10), 1.0f,                 // top-left
-        -(float)(depthX / 10 + 0.2), (float)(depthY / 10), 1.0f,            // top-right
-        -(float)(depthX / 10), (float)(depthY / 10 - 0.08), 1.0f,           // bottom-right
-        -(float)(depthX / 10),  (float)(depthY / 10), 1.0f,                 // top-left
-        -(float)(depthX / 10 + 0.2), (float)(depthY / 10 - 0.08), 1.0f,     // bottom-right
-        -(float)(depthX / 10), (float)(depthY / 10 - 0.08), 1.0f            // bottom-left
+        x,     y,     1.0f,
+        x + w, y,     1.0f,
+        x + w, y - h, 1.0f,
+        x,     y,     1.0f,
+        x + w, y - h, 1.0f,
+        x,     y - h, 1.0f
     };
+    cout << depthX << " : " << depthY << endl;
     glGenVertexArrays(1, outputItem->VAO);
     glBindVertexArray(outputItem->VAO[0]);
     glGenBuffers(1, outputItem->VBO);
@@ -80,11 +82,16 @@ void convertTreeInMenuItem(tree* item, int& depthX, int& depthY) {
     item->item = outputItem;
     if (holds_alternative<vector<tree*>>(item->children_orFuncToCall)) {
         auto children = get<vector<tree*>>(item->children_orFuncToCall);
-        depthX++;
-        depthY = 2;
-        for (tree* child : children) {
-            convertTreeInMenuItem(child, depthX, depthY);
-            depthY++;
+        float depthX_tmp = depthX + 2, depthY_tmp;
+        level++;
+        for (int i = 0; i < children.size(); i++) {
+            cout << level << endl;
+            if (level < 2) {
+                depthY_tmp = depthY + i + 1;
+            } else {
+                depthY_tmp = depthY + i;
+            }
+            convertTreeInMenuItem(children[i], depthX_tmp, depthY_tmp, level);
         }
     }
 }
@@ -134,19 +141,24 @@ class UpperBar {
             // now, generate the menu items tree
             // we call the recursive function to convert the tree into a menu items tree
             // depthX and depthY are use to position the menu items on the screen => max value is 10
-            int depthX = 0;
-            int depthY = 2;
+            float depthX = -2;
+            float depthY = 0;
+            int level = 0;
             if (holds_alternative<vector<tree*>>(head->children_orFuncToCall)) {
                 auto children = get<vector<tree*>>(head->children_orFuncToCall);
-                depthX++;
-                depthY = 2;
                 for (tree* child : children) {
-                    convertTreeInMenuItem(child, depthX, depthY);
-                    depthY++;
+                    convertTreeInMenuItem(child, depthX, depthY, level);
+                    level = 0;
+                    depthY = 0;
+                    depthX += 2;
                 }
             }
+            std::cout << "Root has "
+                      << (holds_alternative<vector<tree*>>(head->children_orFuncToCall) ?
+                          get<vector<tree*>>(head->children_orFuncToCall).size() : 0)
+                      << " direct children\n";
         }
-        void diplay() {
+        void display() {
             glUseProgram(renderingProgram);
             // now, we call a recursive function to display each and every menu item
             displayMenuItems(head);

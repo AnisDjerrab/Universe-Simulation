@@ -25,12 +25,24 @@ vector<string> menu = {
     "Root", "submenu",
         "element1", "submenu",
             "action1", "open",
+            "action2", "open",
+            "action3", "open",
+            "sub_element1", "submenu",
+                "action1", "open",
+                "action2", "open",
+                "exit_submenu", "",
+            "exit_submenu", "",
+        "element2", "submenu",
+            "action1", "open",
+            "exit_submenu", "",
+        "element3", "submenu",
             "exit_submenu", "",
         "exit_submenu", ""
 };
 
 void init() {
     head.text = "Root";
+    head.item = new MenuItem;
     int index = 0;
     convertArrayIntoTree(menu, index, &head);
     bar = new UpperBar(&head);
@@ -44,7 +56,9 @@ void display(GLFWwindow* window) {
     aspect = (float)width / (float)height;
     glViewport(0, 0, width, height);
     Sphere->refresh(0, aspect, vMat);
-    bar->diplay();
+    glDisable(GL_DEPTH_TEST);
+    bar->display();
+    glEnable(GL_DEPTH_TEST);
 }
 
 int main() {
