@@ -3,6 +3,8 @@
 #include "GraphicalLibrary.hpp"
 #include <vector>
 #include <unordered_map>
+#include "libs/ft2build.h"
+#include FT_FREETYPE_H
 
 using namespace std;
 
