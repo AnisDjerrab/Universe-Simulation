@@ -15,6 +15,7 @@ glm::mat4 vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-0.0f, -0.0f, -3.0f))
 tree head;
 class UpperBar* bar;
 font* ft;
+PreCalculatedString ps;
 
 // syntax of this harcoded menu:
 // 1) the root of the menu can have whatever name you want (it doesn't matter)
@@ -49,6 +50,7 @@ void init() {
     bar = new UpperBar(&head);
     bar->GenUI();
     ft = new font("FiraCode-Regular.ttf");
+    ps = ft->PreCalculateTextBitmap("hello world", 100.0f, 100.0f, 1.0f, glm::vec3(100.0f, 100.0f, 100.0f));
 }
 
 void display(GLFWwindow* window) {
@@ -61,7 +63,7 @@ void display(GLFWwindow* window) {
     glDisable(GL_DEPTH_TEST);
     bar->display();
     glEnable(GL_DEPTH_TEST);
-    ft->RenderText("hello world", 0, 0, 1.0f, glm::vec3(100.0f, 100.0f, 100.0f));
+    ft->RenderText2(ps, glm::vec3(100.0f, 100.0f, 100.0f));
 }
 
 int main() {

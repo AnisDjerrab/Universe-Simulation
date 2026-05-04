@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <freetype2/ft2build.h>
 #include "GraphicalLibrary.hpp"
 #include FT_FREETYPE_H
@@ -12,6 +13,11 @@ struct Character {
     glm::ivec2   Size;       // Size of glyph
     glm::ivec2   Bearing;    // Offset from baseline to left/top of glyph
     unsigned int Advance;    // Offset to advance to next glyph
+};
+
+struct PreCalculatedString {
+    GLuint VAO, VBO;
+    GLuint textureID;
 };
 
 class font {
@@ -98,46 +104,47 @@ class font {
             glUseProgram(ProgramID);
             glUniform2f(glGetUniformLocation(ProgramID, "screenSize"), (float)width, (float)height);
         }
-        // this function is coming from the learnopengl.com site (https://learnopengl.com/In-Practice/Text-Rendering)
-        void RenderText(string text, float x, float y, float scale, glm::vec3 color)
-        {
-            glUseProgram(ProgramID);
-            glUniform3f(glGetUniformLocation(ProgramID, "textColor"), color.x, color.y, color.z);
-            glActiveTexture(GL_TEXTURE0);
-            glBindVertexArray(VAO);
-
-            // iterate through all characters
-            for (auto c : text)
-            {
+        PreCalculatedString* PreCalculateTextBitmap(string text, float pos_x, float pos_y, float scale, glm::vec3 color) {
+            // the goal of this function is to combine all the individual generated bitmaps of each character into a single bitmap for the hole sentence
+            // this is done in order to have blazing fast text rendering
+            // first : we need to calculate the total width & height of the combined bitmap
+            int totalWidth = 0;
+            int maxHeight = 0;
+            for (char c : text) {
                 Character ch = ASCII_mapping[static_cast<uint8_t>(c)];
-
-                float xpos = x + ch.Bearing.x * scale;
-                float ypos = y + (ch.Size.y - ch.Bearing.y) * scale;
-
-                float w = ch.Size.x * scale;
-                float h = ch.Size.y * scale;
-                // update VBO for each character
-                float vertices[6][4] = {
-                    { xpos,     ypos,       0.0f, 0.0f },
-                    { xpos,     ypos + h,   0.0f, 1.0f },
-                    { xpos + w, ypos + h,   1.0f, 1.0f },
-
-                    { xpos,     ypos,       0.0f, 0.0f },
-                    { xpos + w, ypos + h,   1.0f, 1.0f },
-                    { xpos + w, ypos,       1.0f, 0.0f }
-                };
-                // render glyph texture over quad
-                glBindTexture(GL_TEXTURE_2D, ch.textureID);
-                // update content of VBO memory
-                glBindBuffer(GL_ARRAY_BUFFER, VBO);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-                // render quad
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-                // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-                x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+                totalWidth += (ch.Advance >> 6) * scale;
+                maxHeight = max(maxHeight, (int)(ch.Size.y * scale));
             }
-            glBindVertexArray(0);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            // calculate the portion a pixel represents on the screen
+            // we need to get the screen size in order to do that
+            int viewport[4];
+            glGetIntegerv(GL_VIEWPORT, viewport);
+            int width = viewport[2];
+            int height = viewport[3];
+            float PIXEL_PROPORTION = 2.0f / (float)width;
+            float vertices[6][5] = {
+                // first triangle
+                {pos_x / PIXEL_PROPORTION,                                 pos_y / PIXEL_PROPORTION + maxHeight / PIXEL_PROPORTION, 1.0f, 0.0f, 0.0f},
+                {pos_x / PIXEL_PROPORTION,                                 pos_y / PIXEL_PROPORTION                               , 1.0f, 0.0f, 1.0f},
+                {pos_x / PIXEL_PROPORTION + totalWidth / PIXEL_PROPORTION, pos_y / PIXEL_PROPORTION                               , 1.0f, 1.0f, 1.0f},
+                // second triangle
+                {pos_x / PIXEL_PROPORTION,                                 pos_y / PIXEL_PROPORTION + maxHeight / PIXEL_PROPORTION, 1.0f, 0.0f, 0.0f},
+                {pos_x / PIXEL_PROPORTION + totalWidth / PIXEL_PROPORTION, pos_y / PIXEL_PROPORTION                               , 1.0f, 1.0f, 1.0f},
+                {pos_x / PIXEL_PROPORTION + totalWidth / PIXEL_PROPORTION, pos_y / PIXEL_PROPORTION + maxHeight / PIXEL_PROPORTION, 1.0f, 1.0f, 0.0f}
+            };
+            // initialize the object
+            PreCalculatedString* output = new PreCalculatedString;
+            glGenVertexArrays(1, &output->VAO);
+            glGenBuffers(1, &output->VBO);
+            glBindVertexArray(output->VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+
+        }
+        void RenderText(const PreCalculatedString& ps, glm::vec3 color) {
         }
 };
